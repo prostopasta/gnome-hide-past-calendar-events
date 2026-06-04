@@ -14,7 +14,11 @@ export default class HidePastCalendarEventsExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
 
-        const eventsItem = Main.panel.statusArea.dateMenu._eventsItem;
+        const eventsItem = Main.panel.statusArea.dateMenu?._eventsItem;
+        if (!eventsItem?._reloadEvents) {
+            console.warn(`[${this.uuid}] _eventsItem._reloadEvents not found — panel calendar patch skipped`);
+            return;
+        }
         this._originalReloadEvents = eventsItem._reloadEvents;
 
         eventsItem._reloadEvents = function () {

@@ -4,6 +4,6 @@
   "uuid": "hide-past-calendar-events@prostopasta.github.com",
   "url": "https://github.com/prostopasta/gnome-hide-past-calendar-events",
   "settings-schema": "org.gnome.shell.extensions.hide-past-calendar-events",
-  "shell-version": ["45", "46"],
+  "shell-version": ["45", "46", "47", "48"],
   "version": 1
 }
