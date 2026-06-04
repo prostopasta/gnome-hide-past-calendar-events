@@ -25,7 +25,7 @@ Before                          After
 Events that **started today and have already ended** are hidden. Everything else — upcoming, ongoing, multi-day events, and events from other days you navigate to — shows normally.
 
 **Alarm notifications:**
-Stale alarm popups (notifications for events whose end time has passed) are dismissed automatically. A background sweep runs every 60 seconds.
+Stale alarm popups (notifications for events whose end time has passed) are dismissed automatically. A background sweep runs every 60 seconds. A configurable grace period lets you keep the notification visible for a few extra minutes after the event ends.
 
 ## Requirements
 
@@ -55,13 +55,25 @@ Enable:
 gnome-extensions enable hide-past-calendar-events@prostopasta.github.com
 ```
 
+## Configuration
+
+Open **GNOME Extensions** app → find "Hide Past Calendar Events" → click **⚙**, or run:
+
+```bash
+gnome-extensions prefs hide-past-calendar-events@prostopasta.github.com
+```
+
+| Setting | Default | Description |
+|---|---|---|
+| **Dismiss delay** | 0 min | Minutes after an event ends before its alarm notification is dismissed. `0` = dismiss immediately once the event end time has passed. |
+
 ## How it works
 
 **Panel calendar:** monkey-patches `_eventsItem._reloadEvents` in GNOME Shell's date menu — the same hook used by [Dim Completed Calendar Events](https://github.com/marcinjahn/gnome-dim-completed-calendar-events-extension). Restores the original on `disable()`.
 
-**Alarm auto-dismiss:** connects to `Main.messageTray`'s `source-added` signal to intercept incoming alarm notifications. Also runs a 60-second sweep for notifications that arrived before the extension loaded. Parses the end time from the notification body and dismisses it if the event has already passed.
+**Alarm auto-dismiss:** connects to `Main.messageTray`'s `source-added` signal to intercept incoming alarm notifications. Also runs a 60-second sweep for notifications that arrived before the extension loaded. Parses the end time from the notification body, adds the configured delay, and dismisses the notification once that threshold has passed.
 
-No settings, no dependencies, ~80 lines of code.
+No external dependencies, ~90 lines of code.
 
 ## After a GNOME Shell update
 
