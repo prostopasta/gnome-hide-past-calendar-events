@@ -7,10 +7,13 @@ export default class HidePastCalendarEventsExtension extends Extension {
     _originalReloadEvents = null;
     _sourceAddedId = null;
     _sweepTimerId = null;
+    _settings = null;
 
     // ── Panel calendar: hide ended events ────────────────────────────────────
 
     enable() {
+        this._settings = this.getSettings();
+
         const eventsItem = Main.panel.statusArea.dateMenu._eventsItem;
         this._originalReloadEvents = eventsItem._reloadEvents;
 
@@ -58,17 +61,14 @@ export default class HidePastCalendarEventsExtension extends Extension {
 
         // ── Notification tray: auto-dismiss stale alarm popups ────────────────
 
-        // Sweep immediately (catches alarms shown before extension loaded)
         this._sweepStaleAlarms();
 
-        // Watch for new notifications as they arrive
         this._sourceAddedId = Main.messageTray.connect('source-added', (_tray, source) => {
             source.connect('notification-added', (_src, notification) => {
                 this._maybeDismiss(notification);
             });
         });
 
-        // Sweep every 60 seconds in case a notification slips through
         this._sweepTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 60, () => {
             this._sweepStaleAlarms();
             return GLib.SOURCE_CONTINUE;
@@ -90,6 +90,7 @@ export default class HidePastCalendarEventsExtension extends Extension {
             this._originalReloadEvents = null;
             eventsItem._reloadEvents();
         }
+        this._settings = null;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -104,15 +105,15 @@ export default class HidePastCalendarEventsExtension extends Extension {
     _sweepStaleAlarms() {
         for (const source of Main.messageTray.getSources()) {
             if (!this._isAlarmSource(source)) continue;
-            // Snapshot the array — destroy() mutates source.notifications in place
+            // Snapshot — destroy() mutates source.notifications in place
             for (const notification of [...source.notifications]) {
                 this._maybeDismiss(notification);
             }
         }
     }
 
-    // Dismiss a notification if its referenced event time is in the past.
-    // We parse time from the notification body (e.g. "09:00 – 10:00").
+    // Dismiss a notification if its event end time + configured delay has passed.
+    // Parses time from the notification body (e.g. "09:00 – 10:00") — last HH:MM = end time.
     _maybeDismiss(notification) {
         if (!this._isAlarmSource(notification.source)) return;
 
@@ -124,10 +125,14 @@ export default class HidePastCalendarEventsExtension extends Extension {
         if (times.length === 0) return;
 
         const last = times[times.length - 1];
-        const endCandidate = new Date(now);
-        endCandidate.setHours(parseInt(last[1]), parseInt(last[2]), 0, 0);
+        const dismissAt = new Date(now);
+        dismissAt.setHours(parseInt(last[1]), parseInt(last[2]), 0, 0);
 
-        if (endCandidate < now) {
+        // Add the configured grace period
+        const delayMs = (this._settings?.get_int('dismiss-delay-minutes') ?? 0) * 60_000;
+        dismissAt.setTime(dismissAt.getTime() + delayMs);
+
+        if (dismissAt < now) {
             notification.destroy();
         }
     }
