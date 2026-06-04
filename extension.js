@@ -17,51 +17,54 @@ export default class HidePastCalendarEventsExtension extends Extension {
         const eventsItem = Main.panel.statusArea.dateMenu?._eventsItem;
         if (!eventsItem?._reloadEvents) {
             console.warn(`[${this.uuid}] _eventsItem._reloadEvents not found — panel calendar patch skipped`);
-            return;
+        } else {
+            this._originalReloadEvents = eventsItem._reloadEvents;
+            const settings = this._settings; // capture for closure
+
+            eventsItem._reloadEvents = function () {
+                if (this._eventSource.isLoading || this._reloading) return;
+                this._reloading = true;
+
+                [...this._eventsList].forEach(c => c.destroy());
+
+                const now = new Date();
+                const todayStart = new Date(now);
+                todayStart.setHours(0, 0, 0, 0);
+
+                const delayMs = settings.get_int('calendar-hide-delay-minutes') * 60_000;
+                const events = this._eventSource.getEvents(this._startDate, this._endDate);
+
+                for (const event of events) {
+                    // Hide events that started today and ended more than delayMs ago
+                    const startedToday = event.date >= todayStart;
+                    const hideAfter = new Date(event.end.getTime() + delayMs);
+                    if (startedToday && hideAfter < now) continue;
+
+                    const box = new St.BoxLayout({ style_class: 'event-box', vertical: true });
+                    box.add_child(new St.Label({
+                        text: event.summary,
+                        style_class: 'event-summary',
+                    }));
+                    box.add_child(new St.Label({
+                        text: this._formatEventTime(event),
+                        style_class: 'event-time',
+                    }));
+                    this._eventsList.add_child(box);
+                }
+
+                if (this._eventsList.get_n_children() === 0) {
+                    this._eventsList.add_child(new St.Label({
+                        text: _('No Events'),
+                        style_class: 'event-placeholder',
+                    }));
+                }
+
+                this._reloading = false;
+                this._sync();
+            };
+
+            eventsItem._reloadEvents();
         }
-        this._originalReloadEvents = eventsItem._reloadEvents;
-
-        eventsItem._reloadEvents = function () {
-            if (this._eventSource.isLoading || this._reloading) return;
-            this._reloading = true;
-
-            [...this._eventsList].forEach(c => c.destroy());
-
-            const now = new Date();
-            const todayStart = new Date(now);
-            todayStart.setHours(0, 0, 0, 0);
-
-            const events = this._eventSource.getEvents(this._startDate, this._endDate);
-
-            for (const event of events) {
-                // Hide events that started today and have already ended
-                const startedToday = event.date >= todayStart;
-                if (startedToday && event.end < now) continue;
-
-                const box = new St.BoxLayout({ style_class: 'event-box', vertical: true });
-                box.add_child(new St.Label({
-                    text: event.summary,
-                    style_class: 'event-summary',
-                }));
-                box.add_child(new St.Label({
-                    text: this._formatEventTime(event),
-                    style_class: 'event-time',
-                }));
-                this._eventsList.add_child(box);
-            }
-
-            if (this._eventsList.get_n_children() === 0) {
-                this._eventsList.add_child(new St.Label({
-                    text: _('No Events'),
-                    style_class: 'event-placeholder',
-                }));
-            }
-
-            this._reloading = false;
-            this._sync();
-        };
-
-        eventsItem._reloadEvents();
 
         // ── Notification tray: auto-dismiss stale alarm popups ────────────────
 
@@ -132,8 +135,7 @@ export default class HidePastCalendarEventsExtension extends Extension {
         const dismissAt = new Date(now);
         dismissAt.setHours(parseInt(last[1]), parseInt(last[2]), 0, 0);
 
-        // Add the configured grace period
-        const delayMs = (this._settings?.get_int('dismiss-delay-minutes') ?? 0) * 60_000;
+        const delayMs = (this._settings?.get_int('dismiss-delay-minutes') ?? 15) * 60_000;
         dismissAt.setTime(dismissAt.getTime() + delayMs);
 
         if (dismissAt < now) {

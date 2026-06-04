@@ -3,13 +3,23 @@
   <schema id="org.gnome.shell.extensions.hide-past-calendar-events"
           path="/org/gnome/shell/extensions/hide-past-calendar-events/">
 
+    <key name="calendar-hide-delay-minutes" type="i">
+      <default>15</default>
+      <summary>Calendar hide delay (minutes)</summary>
+      <description>
+        How many minutes after an event ends before it is hidden from the
+        panel calendar popup. 0 = hide immediately once the event end time
+        has passed.
+      </description>
+    </key>
+
     <key name="dismiss-delay-minutes" type="i">
-      <default>0</default>
+      <default>15</default>
       <summary>Alarm dismiss delay (minutes)</summary>
       <description>
         How many minutes after an event ends before its alarm notification
-        is automatically dismissed. 0 means dismiss immediately once the
-        event end time has passed.
+        is automatically dismissed. 0 = dismiss immediately once the event
+        end time has passed.
       </description>
     </key>
 

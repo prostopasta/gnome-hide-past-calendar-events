@@ -13,29 +13,39 @@ export default class HidePastCalendarEventsPreferences extends ExtensionPreferen
         });
 
         const group = new Adw.PreferencesGroup({
-            title: _('Alarm Notifications'),
-            description: _('Controls when stale alarm popups are automatically dismissed.'),
+            title: _('Hide Delay'),
+            description: _('How long after an event ends before it disappears. 0 = immediately.'),
         });
 
-        const row = new Adw.SpinRow({
-            title: _('Dismiss delay'),
-            subtitle: _('Minutes after an event ends before its alarm notification disappears. 0 = dismiss immediately.'),
+        const calendarRow = new Adw.SpinRow({
+            title: _('Panel calendar'),
+            subtitle: _('Minutes after an event ends before it is removed from the clock popup.'),
             adjustment: new Gtk.Adjustment({
                 lower: 0,
-                upper: 60,
-                step_increment: 1,
-                page_increment: 5,
+                upper: 120,
+                step_increment: 5,
+                page_increment: 15,
             }),
         });
 
-        settings.bind(
-            'dismiss-delay-minutes',
-            row,
-            'value',
-            Gio.SettingsBindFlags.DEFAULT
-        );
+        const dismissRow = new Adw.SpinRow({
+            title: _('Alarm notifications'),
+            subtitle: _('Minutes after an event ends before its alarm popup is dismissed.'),
+            adjustment: new Gtk.Adjustment({
+                lower: 0,
+                upper: 120,
+                step_increment: 5,
+                page_increment: 15,
+            }),
+        });
 
-        group.add(row);
+        settings.bind('calendar-hide-delay-minutes', calendarRow, 'value',
+            Gio.SettingsBindFlags.DEFAULT);
+        settings.bind('dismiss-delay-minutes', dismissRow, 'value',
+            Gio.SettingsBindFlags.DEFAULT);
+
+        group.add(calendarRow);
+        group.add(dismissRow);
         page.add(group);
         window.add(page);
     }

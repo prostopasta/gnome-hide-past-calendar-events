@@ -65,7 +65,10 @@ gnome-extensions prefs hide-past-calendar-events@prostopasta.github.com
 
 | Setting | Default | Description |
 |---|---|---|
-| **Dismiss delay** | 0 min | Minutes after an event ends before its alarm notification is dismissed. `0` = dismiss immediately once the event end time has passed. |
+| **Panel calendar** | 15 min | Minutes after an event ends before it is removed from the clock popup. |
+| **Alarm notifications** | 15 min | Minutes after an event ends before its alarm popup is dismissed. |
+
+Both values accept 0–120 minutes. Set to `0` to hide/dismiss immediately.
 
 ## How it works
 
