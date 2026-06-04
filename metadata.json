@@ -1,0 +1,8 @@
+{
+  "name": "Hide Past Calendar Events",
+  "description": "Hides calendar events that have already ended from the GNOME panel clock popup, keeping only upcoming and ongoing events visible.",
+  "uuid": "hide-past-calendar-events@prostopasta.github.com",
+  "url": "https://github.com/prostopasta/gnome-hide-past-calendar-events",
+  "shell-version": ["45", "46"],
+  "version": 1
+}
