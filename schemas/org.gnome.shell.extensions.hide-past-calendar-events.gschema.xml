@@ -14,7 +14,7 @@
     </key>
 
     <key name="dismiss-delay-minutes" type="i">
-      <default>15</default>
+      <default>0</default>
       <summary>Alarm dismiss delay (minutes)</summary>
       <description>
         How many minutes after an event ends before its alarm notification
