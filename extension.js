@@ -5,7 +5,6 @@ import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
 export default class HidePastCalendarEventsExtension extends Extension {
     _originalReloadEvents = null;
-    _sourceAddedId = null;
     _sweepTimerId = null;
     _settings = null;
 
@@ -70,11 +69,29 @@ export default class HidePastCalendarEventsExtension extends Extension {
 
         this._sweepStaleAlarms();
 
-        this._sourceAddedId = Main.messageTray.connect('source-added', (_tray, source) => {
-            source.connect('notification-added', (_src, notification) => {
-                this._maybeDismiss(notification);
-            });
-        });
+        Main.messageTray.connectObject(
+            'source-added', (_tray, source) => {
+                source.connectObject(
+                    'notification-added', (_src, notification) => {
+                        this._maybeDismiss(notification);
+                    },
+                    this
+                );
+            },
+            'source-removed', (_tray, source) => {
+                source.disconnectObject(this);
+            },
+            this
+        );
+
+        for (const source of Main.messageTray.getSources?.() ?? []) {
+            source.connectObject(
+                'notification-added', (_src, notification) => {
+                    this._maybeDismiss(notification);
+                },
+                this
+            );
+        }
 
         this._sweepTimerId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 60, () => {
             this._sweepStaleAlarms();
@@ -87,15 +104,21 @@ export default class HidePastCalendarEventsExtension extends Extension {
             GLib.source_remove(this._sweepTimerId);
             this._sweepTimerId = null;
         }
-        if (this._sourceAddedId) {
-            Main.messageTray.disconnect(this._sourceAddedId);
-            this._sourceAddedId = null;
+
+        if (Main.messageTray) {
+            for (const source of Main.messageTray.getSources?.() ?? []) {
+                source.disconnectObject(this);
+            }
+            Main.messageTray.disconnectObject(this);
         }
+
         if (this._originalReloadEvents) {
-            const eventsItem = Main.panel.statusArea.dateMenu._eventsItem;
-            eventsItem._reloadEvents = this._originalReloadEvents;
+            const eventsItem = Main.panel.statusArea.dateMenu?._eventsItem;
+            if (eventsItem) {
+                eventsItem._reloadEvents = this._originalReloadEvents;
+                eventsItem._reloadEvents();
+            }
             this._originalReloadEvents = null;
-            eventsItem._reloadEvents();
         }
         this._settings = null;
     }

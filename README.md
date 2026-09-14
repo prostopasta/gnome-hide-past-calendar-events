@@ -29,7 +29,7 @@ Stale alarm popups (notifications for events whose end time has passed) are dism
 
 ## Requirements
 
-- GNOME Shell 45 or 46
+- GNOME Shell 45, 46, 47, or 48
 
 ## Installation
 
