@@ -84,7 +84,7 @@ export default class HidePastCalendarEventsExtension extends Extension {
             this
         );
 
-        for (const source of Main.messageTray.getSources?.() ?? []) {
+        for (const source of Main.messageTray.getSources()) {
             source.connectObject(
                 'notification-added', (_src, notification) => {
                     this._maybeDismiss(notification);
@@ -105,20 +105,16 @@ export default class HidePastCalendarEventsExtension extends Extension {
             this._sweepTimerId = null;
         }
 
-        if (Main.messageTray) {
-            for (const source of Main.messageTray.getSources?.() ?? []) {
-                source.disconnectObject(this);
-            }
-            Main.messageTray.disconnectObject(this);
+        for (const source of Main.messageTray.getSources()) {
+            source.disconnectObject(this);
         }
+        Main.messageTray.disconnectObject(this);
 
         if (this._originalReloadEvents) {
-            const eventsItem = Main.panel.statusArea.dateMenu?._eventsItem;
-            if (eventsItem) {
-                eventsItem._reloadEvents = this._originalReloadEvents;
-                eventsItem._reloadEvents();
-            }
+            const eventsItem = Main.panel.statusArea.dateMenu._eventsItem;
+            eventsItem._reloadEvents = this._originalReloadEvents;
             this._originalReloadEvents = null;
+            eventsItem._reloadEvents();
         }
         this._settings = null;
     }
@@ -158,7 +154,7 @@ export default class HidePastCalendarEventsExtension extends Extension {
         const dismissAt = new Date(now);
         dismissAt.setHours(parseInt(last[1]), parseInt(last[2]), 0, 0);
 
-        const delayMs = (this._settings?.get_int('dismiss-delay-minutes') ?? 15) * 60_000;
+        const delayMs = (this._settings ? this._settings.get_int('dismiss-delay-minutes') : 15) * 60_000;
         dismissAt.setTime(dismissAt.getTime() + delayMs);
 
         if (dismissAt < now) {
